@@ -124,7 +124,7 @@ Num app público, qualquer visitante conversa usando a sua chave do modelo. Por 
 |---|---|---|
 | `LIMITE_IP_HORA` | 20 | Mensagens por visitante por hora |
 | `LIMITE_IP_DIA` | 60 | Mensagens por visitante por dia |
-| `LIMITE_GLOBAL_DIA` | 500 | Mensagens de todos os visitantes somados, por dia |
+| `LIMITE_GLOBAL_DIA` | 150 | Mensagens de todos os visitantes somados, por dia |
 
 Quando um teto estoura, o chat responde com status 429 e avisa quanto tempo falta para liberar. Use `0` para desligar um teto. Os contadores ficam em memória, então zeram quando o servidor reinicia.
 

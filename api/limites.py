@@ -4,7 +4,7 @@ Três tetos, configuráveis pelo ambiente (0 desliga o teto):
 
     LIMITE_IP_HORA     mensagens por visitante por hora     (padrão 20)
     LIMITE_IP_DIA      mensagens por visitante por dia      (padrão 60)
-    LIMITE_GLOBAL_DIA  mensagens de todos somados por dia   (padrão 500)
+    LIMITE_GLOBAL_DIA  mensagens de todos somados por dia   (padrão 150)
 
 Os contadores ficam em memória: zeram quando o servidor reinicia e não são
 compartilhados entre réplicas. Para um app de uma instância só (Docker local ou
@@ -49,7 +49,7 @@ class Limitador:
         return cls(
             por_ip_hora=_ler_int("LIMITE_IP_HORA", 20),
             por_ip_dia=_ler_int("LIMITE_IP_DIA", 60),
-            global_dia=_ler_int("LIMITE_GLOBAL_DIA", 500),
+            global_dia=_ler_int("LIMITE_GLOBAL_DIA", 150),
         )
 
     @staticmethod
