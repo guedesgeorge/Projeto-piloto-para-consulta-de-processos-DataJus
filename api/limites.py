@@ -8,7 +8,7 @@ Três tetos, configuráveis pelo ambiente (0 desliga o teto):
 
 Os contadores ficam em memória: zeram quando o servidor reinicia e não são
 compartilhados entre réplicas. Para um app de uma instância só (Docker local ou
-um Space do Hugging Face) isso basta.
+um serviço de hospedagem com uma instância) isso basta.
 """
 import math
 import os
@@ -107,7 +107,7 @@ def _formatar(segundos: int) -> str:
 def ip_do_visitante(cabecalho_forwarded: str | None, ip_conexao: str | None) -> str:
     """Identifica o visitante.
 
-    Atrás de um proxy (como o do Hugging Face), a conexão vem sempre do proxy e o IP
+    Atrás de um proxy (como o de um serviço de hospedagem), a conexão vem sempre do proxy e o IP
     real chega no X-Forwarded-For. Com CONFIAR_PROXY=1, usamos o último endereço da
     lista, que é o que o proxy viu. Os anteriores podem ter sido escritos pelo próprio
     visitante para burlar o limite.

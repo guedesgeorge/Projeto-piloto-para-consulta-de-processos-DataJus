@@ -103,25 +103,16 @@ LLM_MODELOS=gpt-4o-mini,gpt-4o
 
 Com o DeepSeek, deixei o modo de raciocínio (*thinking*) desligado. Para consultar e resumir dados, ele só deixaria a resposta mais lenta e mais cara.
 
-## Publicando no Hugging Face
+## Publicando o app
 
-O projeto roda num Space do Hugging Face com o SDK Docker, sem mudar nada no código.
+O projeto é uma imagem Docker só, então roda em qualquer serviço que aceite um Dockerfile. Duas variáveis importam quando ele fica público:
 
-1. Crie o Space em [huggingface.co/new-space](https://huggingface.co/new-space), escolhendo **Docker** como SDK (o template em branco serve).
-2. Em **Settings → Variables and secrets** do Space, escolha quem paga pelo modelo:
-   - **Cada visitante paga o próprio uso:** não cadastre o `LLM_API_KEY`. A interface pede a chave do DeepSeek de quem for usar, e o Space não gasta nada seu.
-   - **Você paga, com limite:** cadastre o `LLM_API_KEY` como *secret* e o `CONFIAR_PROXY=1` como *variable*. Quem quiser passar do limite ainda pode usar a própria chave.
-3. Na pasta do projeto, rode:
-
-```bash
-./scripts/publicar_hf.sh seu-usuario/nome-do-space
-```
-
-O script envia o último commit e troca o README pelo `deploy/huggingface/README.md`, que tem o cabeçalho que o Space exige (`sdk: docker`, `app_port: 8000`). Na primeira vez, o git pede usuário e senha. A senha é um [token do Hugging Face](https://huggingface.co/settings/tokens) com permissão de escrita.
+- `LLM_API_KEY`: com ela, a demonstração usa a sua chave, dentro dos limites abaixo. Sem ela, cada visitante informa a própria chave.
+- `CONFIAR_PROXY=1`: atrás do proxy do serviço de hospedagem, faz o limite de uso enxergar o IP real de cada visitante.
 
 ### Limite de uso
 
-Num app público, qualquer visitante conversa usando a sua chave do modelo. Por isso o chat tem três tetos, configuráveis no `.env` ou nas variáveis do Space:
+Num app público, qualquer visitante conversa usando a sua chave do modelo. Por isso o chat tem três tetos, configuráveis no `.env` ou nas variáveis de ambiente do serviço de hospedagem:
 
 | Variável | Padrão | O que limita |
 |---|---|---|
@@ -215,8 +206,6 @@ São 66 testes, e nenhum deles chama serviço externo. Eles cobrem:
 │       ├── PromptBar.jsx # Barra de mensagem reutilizável
 │       └── api.js        # Chamadas ao servidor e leitura do streaming
 ├── tests/                # Testes (pytest)
-├── deploy/huggingface/   # README do Space no Hugging Face
-├── scripts/publicar_hf.sh # Publica o projeto no Space
 ├── Dockerfile            # Monta a interface e o servidor numa imagem só
 └── docker-compose.yml
 ```
