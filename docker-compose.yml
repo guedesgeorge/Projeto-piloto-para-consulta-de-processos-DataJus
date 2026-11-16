@@ -1,0 +1,24 @@
+services:
+  # Interface web + API + agente, num único serviço: http://localhost:8000
+  app:
+    build: .
+    image: agente-consulta-processual
+    pull_policy: build
+    env_file: .env
+    ports:
+      - "${API_PORT:-8000}:8000"   # mude API_PORT no .env se a 8000 estiver ocupada
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  # Agente no terminal: docker compose run --rm cli
+  cli:
+    image: agente-consulta-processual
+    pull_policy: never   # usa a imagem montada pelo serviço app
+    env_file: .env
+    stdin_open: true
+    tty: true
+    profiles: ["cli"]
+    command: ["python", "-m", "agente.cli"]
