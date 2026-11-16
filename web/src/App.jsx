@@ -30,12 +30,6 @@ const FONTES = [
   { key: 'pdf', name: 'Anexar PDF', description: 'Intimação, petição ou decisão', icon: Pdf01Icon, attach: true, accept: 'application/pdf,.pdf' },
 ];
 
-const EXEMPLOS = [
-  { titulo: 'Situação do processo', texto: 'Em que pé está o processo 0000832-35.2018.4.01.3202?' },
-  { titulo: 'Classe e assunto', texto: 'Qual a classe e o assunto do processo 0000832-35.2018.4.01.3202?' },
-  { titulo: 'Limites dos dados', texto: 'Quem são as partes do processo 0000832-35.2018.4.01.3202?' },
-];
-
 // A chave do visitante fica só no navegador dele. O armazenamento pode falhar
 // (navegação privada, iframe bloqueado), então tudo vai dentro de try/catch.
 const CHAVE_LOCAL = 'acp:chave-llm';
@@ -213,14 +207,6 @@ export default function App() {
               Informe o número no formato <code>NNNNNNN-DD.AAAA.J.TR.OOOO</code> ou anexe um PDF. O agente consulta o DataJud e
               explica a situação do processo.
             </p>
-            <div className="exemplos">
-              {EXEMPLOS.map((ex) => (
-                <button type="button" key={ex.titulo} className="exemplo" disabled={busy || !modelos.length} onClick={() => send(ex.texto, { model: modelos[0] })}>
-                  <strong>{ex.titulo}</strong>
-                  <span>{ex.texto}</span>
-                </button>
-              ))}
-            </div>
           </div>
         ) : (
           <div className="mensagens">

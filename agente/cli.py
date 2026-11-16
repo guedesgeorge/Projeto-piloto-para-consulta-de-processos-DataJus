@@ -2,7 +2,7 @@
 
 Uso:
     python -m agente.cli                          # modo conversa
-    python -m agente.cli "Em que pé está o processo 0000832-35.2018.4.01.3202?"
+    python -m agente.cli "Em que pé está o processo NNNNNNN-DD.AAAA.J.TR.OOOO?"
 """
 import sys
 

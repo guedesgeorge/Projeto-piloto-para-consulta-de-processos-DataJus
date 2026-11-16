@@ -18,7 +18,7 @@ Este projeto encurta esse caminho. Você cola o número do processo (ou anexa a 
 
 ## O que dá pra fazer
 
-- **Perguntar em linguagem natural.** "Em que pé está o processo 0000832-35.2018.4.01.3202?" já basta. Se faltar o número, o agente pede. Se a pergunta fugir do assunto, ele avisa que não é com ele.
+- **Perguntar em linguagem natural.** "Em que pé está o processo NNNNNNN-DD.AAAA.J.TR.OOOO?", com o número do processo, já basta. Se faltar o número, o agente pede. Se a pergunta fugir do assunto, ele avisa que não é com ele.
 - **Ver de onde veio a resposta.** Toda consulta ao DataJud aparece na conversa, com um resumo e os dados brutos. Nada de confiar no modelo de olhos fechados.
 - **Anexar um PDF.** Intimação, petição, decisão: o sistema extrai o texto, acha os números de processo, confere o dígito verificador de cada um e o agente consulta todos.
 - **Acompanhar a resposta sendo escrita.** O texto chega em streaming, e dá pra interromper no meio.
