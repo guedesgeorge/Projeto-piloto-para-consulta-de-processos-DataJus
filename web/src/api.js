@@ -19,17 +19,21 @@ export async function lerAnexo(arquivo) {
  * Envia a conversa ao agente e chama `aoReceber(evento)` para cada evento do streaming
  * (consulta_inicio, consulta, texto, erro, fim).
  */
-export async function conversar({ mensagens, modelo, signal, aoReceber }) {
+export async function conversar({ mensagens, modelo, chave, signal, aoReceber }) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (chave) headers['X-LLM-Key'] = chave; // chave do visitante: repassada ao DeepSeek, não fica no servidor
   const r = await fetch('/api/chat', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ mensagens, modelo }),
     signal,
   });
   if (!r.ok) {
     const corpo = await r.json().catch(() => ({}));
     const detalhe = Array.isArray(corpo.detail) ? corpo.detail.map((d) => d.msg).join('; ') : corpo.detail;
-    throw new Error(detalhe || `Erro ${r.status} no servidor.`);
+    const erro = new Error(detalhe || `Erro ${r.status} no servidor.`);
+    erro.status = r.status;
+    throw erro;
   }
 
   const leitor = r.body.getReader();

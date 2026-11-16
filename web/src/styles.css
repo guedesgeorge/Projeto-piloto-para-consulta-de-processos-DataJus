@@ -47,6 +47,39 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 }
 .botao-fantasma:hover { background: rgba(255, 255, 255, 0.05); }
 
+.topo__acoes { display: flex; gap: 8px; flex-shrink: 0; }
+.botao-fantasma.is-ativo { color: var(--roxo); border-color: color-mix(in srgb, var(--roxo) 40%, transparent); }
+.botao-primario {
+  padding: 7px 14px; border-radius: 9px; border: 0; cursor: pointer;
+  background: var(--roxo); color: #18181b; font-size: 13px; font-weight: 600;
+}
+.botao-primario:disabled { opacity: 0.45; cursor: default; }
+.botao-perigo { color: var(--vermelho); }
+
+/* Painel da chave do visitante */
+.painel-fundo {
+  position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px;
+  background: rgba(0, 0, 0, 0.55); animation: aparecer 0.15s ease-out;
+}
+@keyframes aparecer { from { opacity: 0; } }
+.painel {
+  width: min(440px, 100%); padding: 20px; border-radius: 16px;
+  background: var(--bg-elev); border: 1px solid var(--linha); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+.painel h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 16px; font-weight: 600; }
+.painel h2 svg { color: var(--roxo); }
+.painel > p { margin: 0 0 16px; font-size: 13.5px; line-height: 1.55; color: var(--fg-dim); }
+.painel label { display: block; margin-bottom: 6px; font-size: 12.5px; font-weight: 500; }
+.painel input {
+  width: 100%; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--linha);
+  background: #141416; color: var(--fg); font: 13px ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.painel input:focus { outline: 2px solid color-mix(in srgb, var(--roxo) 60%, transparent); outline-offset: 1px; }
+.painel__nota { margin: 10px 0 18px; font-size: 12px; line-height: 1.5; color: var(--fg-dim); }
+.painel__nota a { color: var(--roxo); }
+.painel__botoes { display: flex; align-items: center; gap: 8px; }
+.painel__espaco { flex: 1; }
+
 /* Conversa */
 .conversa { flex: 1; overflow-y: auto; padding: 24px 16px 8px; scrollbar-gutter: stable; }
 .mensagens, .inicio { max-width: 760px; margin: 0 auto; }
@@ -158,13 +191,12 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 
 @media (max-width: 600px) {
   .topo { padding: 12px 16px; }
-  .botao-fantasma { padding: 7px 9px; }
-  .botao-fantasma { font-size: 0; gap: 0; }
-  .botao-fantasma svg { width: 18px; height: 18px; }
+  .topo .botao-fantasma { padding: 7px 9px; font-size: 0; gap: 0; }
+  .topo .botao-fantasma svg { width: 18px; height: 18px; }
   .inicio { padding-top: 2vh; }
   .nota { font-size: 11px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .msg, .cursor, .pensando span, .is-carregando .consulta__icone { animation: none; }
+  .msg, .cursor, .pensando span, .is-carregando .consulta__icone, .painel-fundo { animation: none; }
 }

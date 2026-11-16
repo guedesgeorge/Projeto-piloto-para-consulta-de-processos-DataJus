@@ -6,7 +6,9 @@ import {
   Alert02Icon,
   ArrowDown01Icon,
   CheckmarkCircle02Icon,
+  Delete02Icon,
   JusticeScale01Icon,
+  Key01Icon,
   Loading03Icon,
   MessageAdd01Icon,
   Pdf01Icon,
@@ -34,6 +36,19 @@ const EXEMPLOS = [
   { titulo: 'Limites dos dados', texto: 'Quem são as partes do processo 0000832-35.2018.4.01.3202?' },
 ];
 
+// A chave do visitante fica só no navegador dele. O armazenamento pode falhar
+// (navegação privada, iframe bloqueado), então tudo vai dentro de try/catch.
+const CHAVE_LOCAL = 'acp:chave-llm';
+function lerChaveSalva() {
+  try { return localStorage.getItem(CHAVE_LOCAL) || ''; } catch { return ''; }
+}
+function salvarChave(valor) {
+  try {
+    if (valor) localStorage.setItem(CHAVE_LOCAL, valor);
+    else localStorage.removeItem(CHAVE_LOCAL);
+  } catch { /* sem armazenamento: a chave vale só enquanto a página estiver aberta */ }
+}
+
 let proximoId = 1;
 const novoId = () => proximoId++;
 
@@ -42,6 +57,9 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [modelos, setModelos] = useState([]);
   const [aviso, setAviso] = useState('');
+  const [chave, setChave] = useState(lerChaveSalva);
+  const [chaveServidor, setChaveServidor] = useState(true);
+  const [painelChave, setPainelChave] = useState(false);
   const controller = useRef(null);
   const fimRef = useRef(null);
   const listaRef = useRef(null);
@@ -49,7 +67,10 @@ export default function App() {
 
   useEffect(() => {
     carregarConfig()
-      .then(({ modelos }) => setModelos(modelos.map((key) => ({ key, ...(NOMES_MODELOS[key] ?? { name: key }) }))))
+      .then(({ modelos, chave_servidor }) => {
+        setModelos(modelos.map((key) => ({ key, ...(NOMES_MODELOS[key] ?? { name: key }) })));
+        setChaveServidor(chave_servidor !== false);
+      })
       .catch(() => setAviso('Servidor indisponível. Verifique se a API está rodando.'));
   }, []);
 
@@ -84,6 +105,11 @@ export default function App() {
       text = 'Resuma a nossa conversa até aqui em tópicos curtos, destacando os processos consultados.';
     }
 
+    if (!chaveServidor && !chave) {
+      setPainelChave(true);
+      return setAviso('Para conversar, informe a sua chave de API do DeepSeek.');
+    }
+
     setBusy(true);
     controller.current = new AbortController();
     colado.current = true;
@@ -106,6 +132,7 @@ export default function App() {
       await conversar({
         mensagens: historico.filter((m) => !m.erro).map(({ papel, texto, anexos }) => ({ papel, texto, anexos: anexos ?? [] })),
         modelo: model?.key,
+        chave,
         signal: controller.current.signal,
         aoReceber: (ev) =>
           atualizarUltima((m) => {
@@ -118,7 +145,10 @@ export default function App() {
           }),
       });
     } catch (e) {
-      atualizarUltima((m) => (e.name === 'AbortError' ? { ...m, interrompida: true } : { ...m, erro: e.message }));
+      let mensagem = e.message;
+      if (e.status === 401) setPainelChave(true);
+      if (e.status === 429 && !chave) mensagem += ' Se preferir, use a sua própria chave do DeepSeek em "Sua chave", sem limite.';
+      atualizarUltima((m) => (e.name === 'AbortError' ? { ...m, interrompida: true } : { ...m, erro: mensagem }));
     } finally {
       atualizarUltima((m) => ({ ...m, pendente: false }));
       setBusy(false);
@@ -137,12 +167,36 @@ export default function App() {
             <p>Dados públicos do DataJud · CNJ</p>
           </div>
         </div>
-        {!vazio && (
-          <button type="button" className="botao-fantasma" onClick={novaConversa}>
-            <HugeiconsIcon icon={MessageAdd01Icon} size={16} /> Nova conversa
+        <div className="topo__acoes">
+          <button
+            type="button"
+            className={`botao-fantasma${chave ? ' is-ativo' : ''}`}
+            onClick={() => setPainelChave(true)}
+            aria-haspopup="dialog"
+          >
+            <HugeiconsIcon icon={Key01Icon} size={16} /> {chave ? 'Usando sua chave' : 'Sua chave'}
           </button>
-        )}
+          {!vazio && (
+            <button type="button" className="botao-fantasma" onClick={novaConversa}>
+              <HugeiconsIcon icon={MessageAdd01Icon} size={16} /> Nova conversa
+            </button>
+          )}
+        </div>
       </header>
+
+      {painelChave && (
+        <PainelChave
+          atual={chave}
+          obrigatoria={!chaveServidor}
+          aoSalvar={(valor) => {
+            setChave(valor);
+            salvarChave(valor);
+            setPainelChave(false);
+            setAviso('');
+          }}
+          aoFechar={() => setPainelChave(false)}
+        />
+      )}
 
       <main
         className="conversa"
@@ -286,6 +340,61 @@ function Consulta({ c }) {
           <pre>{dados ? JSON.stringify(dados, null, 2) : c.resultado}</pre>
         </div>
       )}
+    </div>
+  );
+}
+
+function PainelChave({ atual, obrigatoria, aoSalvar, aoFechar }) {
+  const [valor, setValor] = useState(atual);
+  const campo = useRef(null);
+
+  useEffect(() => {
+    campo.current?.focus();
+    const fechar = (e) => e.key === 'Escape' && aoFechar();
+    window.addEventListener('keydown', fechar);
+    return () => window.removeEventListener('keydown', fechar);
+  }, [aoFechar]);
+
+  const salvar = (e) => {
+    e.preventDefault();
+    aoSalvar(valor.trim());
+  };
+
+  return (
+    <div className="painel-fundo" onMouseDown={(e) => e.target === e.currentTarget && aoFechar()}>
+      <form className="painel" role="dialog" aria-modal="true" aria-labelledby="painel-titulo" onSubmit={salvar}>
+        <h2 id="painel-titulo"><HugeiconsIcon icon={Key01Icon} size={18} /> Sua chave do DeepSeek</h2>
+        <p>
+          {obrigatoria
+            ? 'Esta demonstração usa a sua própria chave: as perguntas são cobradas na sua conta do DeepSeek, a poucos centavos cada.'
+            : 'Opcional. Com a sua chave, as perguntas são cobradas na sua conta do DeepSeek e não contam no limite da demonstração.'}
+        </p>
+        <label htmlFor="campo-chave">Chave de API</label>
+        <input
+          id="campo-chave"
+          ref={campo}
+          type="password"
+          autoComplete="off"
+          spellCheck={false}
+          placeholder="sk-..."
+          value={valor}
+          onChange={(e) => setValor(e.target.value)}
+        />
+        <p className="painel__nota">
+          A chave fica salva só neste navegador. Ela vai junto de cada pergunta e é repassada ao DeepSeek, sem ser guardada no servidor.{' '}
+          <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noreferrer">Criar uma chave</a>
+        </p>
+        <div className="painel__botoes">
+          {atual && (
+            <button type="button" className="botao-fantasma botao-perigo" onClick={() => aoSalvar('')}>
+              <HugeiconsIcon icon={Delete02Icon} size={16} /> Remover
+            </button>
+          )}
+          <span className="painel__espaco" />
+          <button type="button" className="botao-fantasma" onClick={aoFechar}>Cancelar</button>
+          <button type="submit" className="botao-primario" disabled={!valor.trim() || valor.trim() === atual}>Salvar</button>
+        </div>
+      </form>
     </div>
   );
 }
