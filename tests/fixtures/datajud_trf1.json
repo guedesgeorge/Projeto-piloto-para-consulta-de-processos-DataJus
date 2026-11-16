@@ -1,0 +1,50 @@
+{
+  "took": 12,
+  "timed_out": false,
+  "hits": {
+    "total": {"value": 1, "relation": "eq"},
+    "hits": [
+      {
+        "_index": "api_publica_trf1",
+        "_source": {
+          "id": "TRF1_JE_00008323520184013202",
+          "tribunal": "TRF1",
+          "grau": "JE",
+          "numeroProcesso": "00008323520184013202",
+          "dataAjuizamento": "20181029000000",
+          "nivelSigilo": 0,
+          "orgaoJulgador": {"codigo": 16403, "nome": "Tefé", "codigoMunicipioIBGE": 5128},
+          "classe": {"codigo": 436, "nome": "Procedimento do Juizado Especial Cível"},
+          "sistema": {"codigo": 1, "nome": "PJe"},
+          "formato": {"codigo": 1, "nome": "Eletrônico"},
+          "dataHoraUltimaAtualizacao": "2026-06-08T14:55:23.378000Z",
+          "@timestamp": "2026-06-08T14:55:23.378000Z",
+          "movimentos": [
+            {
+              "codigo": 581,
+              "dataHora": "2020-11-12T20:24:27.000Z",
+              "nome": "Documento",
+              "complementosTabelados": [
+                {"codigo": 4, "descricao": "tipo_de_documento", "valor": 80, "nome": "Outros documentos"}
+              ],
+              "orgaoJulgador": {"codigo": "17595", "nome": "08ª  Vara JEF- Manaus"}
+            },
+            {
+              "codigo": 11383,
+              "dataHora": "2024-07-03T09:05:34.000Z",
+              "nome": "Ato ordinatório",
+              "orgaoJulgador": {"codigo": "17595", "nome": "08ª  Vara JEF- Manaus"}
+            },
+            {
+              "codigo": 246,
+              "dataHora": "2020-11-12T20:27:30.000Z",
+              "nome": "Definitivo",
+              "orgaoJulgador": {"codigo": "17595", "nome": "08ª  Vara JEF- Manaus"}
+            }
+          ],
+          "assuntos": [{"codigo": 6177, "nome": "Concessão"}]
+        }
+      }
+    ]
+  }
+}
