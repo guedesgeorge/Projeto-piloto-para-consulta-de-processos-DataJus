@@ -59,3 +59,12 @@ def servico_falso(monkeypatch):
 
     monkeypatch.setattr(servico, "consultar_processo", consultar)
     return chamados
+
+
+@pytest.fixture(autouse=True)
+def limitador_zerado(monkeypatch):
+    """Cada teste começa com os contadores de uso do chat zerados."""
+    import api.main as main
+    from api.limites import Limitador
+
+    monkeypatch.setattr(main, "limitador", Limitador.do_ambiente())

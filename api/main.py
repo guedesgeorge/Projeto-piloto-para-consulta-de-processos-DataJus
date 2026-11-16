@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Literal
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -12,6 +12,8 @@ from pydantic import BaseModel, Field
 from agente import agente as ag
 from consulta import servico
 from consulta.anexos import AnexoInvalido, ler_pdf
+
+from .limites import Limitador, ip_do_visitante
 
 load_dotenv()
 
@@ -24,6 +26,8 @@ app = FastAPI(
 MAX_MENSAGENS = 20          # histórico enviado ao modelo
 MAX_CARACTERES = 20_000     # por mensagem (texto + anexos)
 MAX_PDF_BYTES = 10 * 1024 * 1024
+
+limitador = Limitador.do_ambiente()   # protege a chave do LLM quando o app é público
 
 
 # ------------------------------------------------------------------ modelos de dados
@@ -131,7 +135,7 @@ def _sse(evento: dict) -> str:
 
 
 @app.post("/api/chat", tags=["chat"])
-def chat(req: ChatRequest):
+def chat(req: ChatRequest, request: Request):
     """Conversa com o agente. A resposta chega aos poucos (Server-Sent Events).
 
     Eventos: consulta_inicio, consulta, texto, erro e fim.
@@ -142,6 +146,12 @@ def chat(req: ChatRequest):
         raise HTTPException(status_code=422, detail=f"Modelo não disponível. Opções: {', '.join(modelos)}")
     if req.mensagens[-1].papel != "user":
         raise HTTPException(status_code=422, detail="A última mensagem deve ser do usuário.")
+
+    ip = ip_do_visitante(request.headers.get("x-forwarded-for"), request.client.host if request.client else None)
+    bloqueio = limitador.registrar(ip)
+    if bloqueio:
+        raise HTTPException(status_code=429, detail=bloqueio.mensagem,
+                            headers={"Retry-After": str(bloqueio.tentar_em)})
 
     try:
         agente = obter_agente(nome_modelo)
