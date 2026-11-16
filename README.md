@@ -12,7 +12,7 @@ Este projeto encurta esse caminho. Você cola o número do processo (ou anexa a 
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19">
   <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite">
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
-  <img src="https://img.shields.io/badge/pytest-59_testes-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white" alt="pytest">
+  <img src="https://img.shields.io/badge/pytest-66_testes-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white" alt="pytest">
   <img src="https://img.shields.io/badge/DataJud-CNJ-0066CC?style=for-the-badge" alt="DataJud CNJ">
 </p>
 
@@ -25,6 +25,7 @@ Este projeto encurta esse caminho. Você cola o número do processo (ou anexa a 
 - **Escolher o modelo.** DeepSeek Flash quando a pressa é maior, DeepSeek V4 Pro quando a precisão importa mais.
 - **Usar atalhos.** Digite `/` na barra: `/nova` começa outra conversa e `/resumo` resume o que já foi falado.
 - **Usar pelo terminal**, se preferir: é o mesmo agente.
+- **Trazer a própria chave.** Em "Sua chave", o visitante cola a chave dele do DeepSeek e as perguntas saem da conta dele. Num app público, isso deixa a demonstração de graça pra quem publica.
 
 ## Como funciona
 
@@ -57,7 +58,7 @@ Separar a consulta do agente foi proposital. A validação do número e a busca 
 | Modelo | **DeepSeek** | Flash (rápido) ou V4 Pro (preciso), via API compatível com a da OpenAI |
 | Dados | **API pública do DataJud (CNJ)** | Metadados de processos de 91 tribunais |
 | PDFs | **pypdf** | Extração de texto das intimações e petições |
-| Testes | **pytest** | 59 testes, sem chamar nenhum serviço externo |
+| Testes | **pytest** | 66 testes, sem chamar nenhum serviço externo |
 | Infra | **Docker + Docker Compose** | Uma imagem só, com a interface e o servidor |
 
 ## Rodando na sua máquina
@@ -107,7 +108,9 @@ Com o DeepSeek, deixei o modo de raciocínio (*thinking*) desligado. Para consul
 O projeto roda num Space do Hugging Face com o SDK Docker, sem mudar nada no código.
 
 1. Crie o Space em [huggingface.co/new-space](https://huggingface.co/new-space), escolhendo **Docker** como SDK (o template em branco serve).
-2. Em **Settings → Variables and secrets** do Space, cadastre o `LLM_API_KEY` como *secret* e o `CONFIAR_PROXY=1` como *variable*. Se quiser, ajuste ali também os limites de uso.
+2. Em **Settings → Variables and secrets** do Space, escolha quem paga pelo modelo:
+   - **Cada visitante paga o próprio uso:** não cadastre o `LLM_API_KEY`. A interface pede a chave do DeepSeek de quem for usar, e o Space não gasta nada seu.
+   - **Você paga, com limite:** cadastre o `LLM_API_KEY` como *secret* e o `CONFIAR_PROXY=1` como *variable*. Quem quiser passar do limite ainda pode usar a própria chave.
 3. Na pasta do projeto, rode:
 
 ```bash
@@ -128,6 +131,12 @@ Num app público, qualquer visitante conversa usando a sua chave do modelo. Por 
 
 Quando um teto estoura, o chat responde com status 429 e avisa quanto tempo falta para liberar. Use `0` para desligar um teto. Os contadores ficam em memória, então zeram quando o servidor reinicia.
 
+### Traga sua chave
+
+O botão **Sua chave**, no topo da página, guarda a chave do DeepSeek do visitante no navegador dele (`localStorage`). A chave vai no cabeçalho `X-LLM-Key` de cada pergunta e o servidor a repassa ao DeepSeek. O servidor não grava essa chave nem a mantém em memória depois da resposta, e as perguntas feitas com ela não contam no limite de uso.
+
+Sem `LLM_API_KEY` no servidor, a chave do visitante passa a ser obrigatória. O `/api/config` informa isso à interface com o campo `chave_servidor`.
+
 ## API
 
 A documentação interativa fica em **http://localhost:8000/docs**.
@@ -135,9 +144,9 @@ A documentação interativa fica em **http://localhost:8000/docs**.
 | Rota | O que faz |
 |---|---|
 | `GET /api/processos/{numero}` | Consulta um processo e devolve o resumo em JSON |
-| `POST /api/chat` | Conversa com o agente (streaming via Server-Sent Events) |
+| `POST /api/chat` | Conversa com o agente (streaming via Server-Sent Events). Aceita a chave do visitante no cabeçalho `X-LLM-Key` |
 | `POST /api/anexos` | Lê um PDF e devolve o texto e os números de processo válidos |
-| `GET /api/config` | Lista os modelos disponíveis |
+| `GET /api/config` | Lista os modelos disponíveis e diz se o servidor tem chave própria do LLM |
 
 E os status que `/api/processos` pode devolver:
 
@@ -176,14 +185,14 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-São 59 testes, e nenhum deles chama serviço externo. Eles cobrem:
+São 66 testes, e nenhum deles chama serviço externo. Eles cobrem:
 
 - a validação do número CNJ e a identificação do tribunal;
 - a consulta, com respostas simuladas do DataJud, incluindo timeout, erro 5xx e chave recusada;
 - o agente: quando chama a ferramenta, quando não chama, a ordem dos eventos, o histórico e os anexos;
 - o chat em streaming, a escolha do modelo e o que acontece quando o LLM falha;
 - a leitura de PDFs;
-- o limite de uso do chat.
+- o limite de uso do chat e o modo "traga sua chave".
 
 ## Estrutura
 

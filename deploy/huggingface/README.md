@@ -19,7 +19,8 @@ Para testar, experimente: *Em que pé está o processo 0000832-35.2018.4.01.3202
 
 ## Sobre esta demonstração
 
-- Ela tem um **limite de mensagens por visitante** e um teto diário geral, porque roda com a minha chave do modelo de linguagem. Se o limite estourar, dá pra rodar o projeto na sua máquina com a sua chave.
+- Você pode usar a **sua própria chave do DeepSeek** no botão "Sua chave", no topo. Ela fica salva só no seu navegador e as perguntas saem da sua conta, a poucos centavos cada. Crie uma em [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys).
+- Quando a demonstração roda com a minha chave, há um limite de mensagens por visitante e um teto diário geral. Com a sua chave, não há limite.
 - O DataJud traz só **metadados de processos públicos**: não vêm os nomes das partes nem o conteúdo das decisões.
 - O **texto dos PDFs anexados vai para o modelo de linguagem**. Não anexe nada sigiloso.
 - O DataJud às vezes demora ou recusa requisições por excesso de uso. Se a consulta falhar, tente de novo em alguns instantes.
