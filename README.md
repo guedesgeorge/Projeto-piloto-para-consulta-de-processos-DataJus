@@ -12,7 +12,7 @@ Este projeto encurta esse caminho. Você cola o número do processo (ou anexa a 
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19">
   <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite">
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
-  <img src="https://img.shields.io/badge/pytest-46_testes-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white" alt="pytest">
+  <img src="https://img.shields.io/badge/pytest-59_testes-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white" alt="pytest">
   <img src="https://img.shields.io/badge/DataJud-CNJ-0066CC?style=for-the-badge" alt="DataJud CNJ">
 </p>
 
@@ -57,7 +57,7 @@ Separar a consulta do agente foi proposital. A validação do número e a busca 
 | Modelo | **DeepSeek** | Flash (rápido) ou V4 Pro (preciso), via API compatível com a da OpenAI |
 | Dados | **API pública do DataJud (CNJ)** | Metadados de processos de 91 tribunais |
 | PDFs | **pypdf** | Extração de texto das intimações e petições |
-| Testes | **pytest** | 46 testes, sem chamar nenhum serviço externo |
+| Testes | **pytest** | 59 testes, sem chamar nenhum serviço externo |
 | Infra | **Docker + Docker Compose** | Uma imagem só, com a interface e o servidor |
 
 ## Rodando na sua máquina
@@ -101,6 +101,32 @@ LLM_MODELOS=gpt-4o-mini,gpt-4o
 ```
 
 Com o DeepSeek, deixei o modo de raciocínio (*thinking*) desligado. Para consultar e resumir dados, ele só deixaria a resposta mais lenta e mais cara.
+
+## Publicando no Hugging Face
+
+O projeto roda num Space do Hugging Face com o SDK Docker, sem mudar nada no código.
+
+1. Crie o Space em [huggingface.co/new-space](https://huggingface.co/new-space), escolhendo **Docker** como SDK (o template em branco serve).
+2. Em **Settings → Variables and secrets** do Space, cadastre o `LLM_API_KEY` como *secret* e o `CONFIAR_PROXY=1` como *variable*. Se quiser, ajuste ali também os limites de uso.
+3. Na pasta do projeto, rode:
+
+```bash
+./scripts/publicar_hf.sh seu-usuario/nome-do-space
+```
+
+O script envia o último commit e troca o README pelo `deploy/huggingface/README.md`, que tem o cabeçalho que o Space exige (`sdk: docker`, `app_port: 8000`). Na primeira vez, o git pede usuário e senha. A senha é um [token do Hugging Face](https://huggingface.co/settings/tokens) com permissão de escrita.
+
+### Limite de uso
+
+Num app público, qualquer visitante conversa usando a sua chave do modelo. Por isso o chat tem três tetos, configuráveis no `.env` ou nas variáveis do Space:
+
+| Variável | Padrão | O que limita |
+|---|---|---|
+| `LIMITE_IP_HORA` | 20 | Mensagens por visitante por hora |
+| `LIMITE_IP_DIA` | 60 | Mensagens por visitante por dia |
+| `LIMITE_GLOBAL_DIA` | 500 | Mensagens de todos os visitantes somados, por dia |
+
+Quando um teto estoura, o chat responde com status 429 e avisa quanto tempo falta para liberar. Use `0` para desligar um teto. Os contadores ficam em memória, então zeram quando o servidor reinicia.
 
 ## API
 
@@ -150,13 +176,14 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-São 46 testes, e nenhum deles chama serviço externo. Eles cobrem:
+São 59 testes, e nenhum deles chama serviço externo. Eles cobrem:
 
 - a validação do número CNJ e a identificação do tribunal;
 - a consulta, com respostas simuladas do DataJud, incluindo timeout, erro 5xx e chave recusada;
 - o agente: quando chama a ferramenta, quando não chama, a ordem dos eventos, o histórico e os anexos;
 - o chat em streaming, a escolha do modelo e o que acontece quando o LLM falha;
-- a leitura de PDFs.
+- a leitura de PDFs;
+- o limite de uso do chat.
 
 ## Estrutura
 
@@ -170,13 +197,17 @@ São 46 testes, e nenhum deles chama serviço externo. Eles cobrem:
 ├── agente/
 │   ├── agente.py         # Agente, ferramenta, modelos e streaming de eventos
 │   └── cli.py            # Conversa pelo terminal
-├── api/main.py           # Servidor FastAPI (rotas /api e interface web)
+├── api/
+│   ├── main.py           # Servidor FastAPI (rotas /api e interface web)
+│   └── limites.py        # Limite de uso do chat por visitante e por dia
 ├── web/                  # Interface React (Vite)
 │   └── src/
 │       ├── App.jsx       # Tela do chat
 │       ├── PromptBar.jsx # Barra de mensagem reutilizável
 │       └── api.js        # Chamadas ao servidor e leitura do streaming
 ├── tests/                # Testes (pytest)
+├── deploy/huggingface/   # README do Space no Hugging Face
+├── scripts/publicar_hf.sh # Publica o projeto no Space
 ├── Dockerfile            # Monta a interface e o servidor numa imagem só
 └── docker-compose.yml
 ```
