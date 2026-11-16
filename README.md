@@ -16,6 +16,10 @@ Este projeto encurta esse caminho. Você cola o número do processo (ou anexa a 
   <img src="https://img.shields.io/badge/DataJud-CNJ-0066CC?style=for-the-badge" alt="DataJud CNJ">
 </p>
 
+<p align="center">
+  <img src="docs/tela-inicial.png" alt="Tela inicial do Agente de Consulta Processual: campo para perguntar sobre um processo, seletor de modelo DeepSeek Flash e botão Sua chave" width="900">
+</p>
+
 ## O que dá pra fazer
 
 - **Perguntar em linguagem natural.** "Em que pé está o processo NNNNNNN-DD.AAAA.J.TR.OOOO?", com o número do processo, já basta. Se faltar o número, o agente pede. Se a pergunta fugir do assunto, ele avisa que não é com ele.
