@@ -68,3 +68,9 @@ def limitador_zerado(monkeypatch):
     from api.limites import Limitador
 
     monkeypatch.setattr(main, "limitador", Limitador.do_ambiente())
+
+
+@pytest.fixture(autouse=True)
+def chave_do_servidor(monkeypatch):
+    """Por padrão, o servidor tem chave própria do LLM. Os testes do modo "traga sua chave" a removem."""
+    monkeypatch.setenv("LLM_API_KEY", "chave-do-servidor-de-teste")

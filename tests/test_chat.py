@@ -31,7 +31,7 @@ def agente_roteirizado(monkeypatch):
 
 def test_config_lista_modelos(monkeypatch):
     monkeypatch.setenv("LLM_MODELOS", "deepseek-flash,deepseek-v4-pro")
-    assert client.get("/api/config").json() == {"modelos": ["deepseek-flash", "deepseek-v4-pro"]}
+    assert client.get("/api/config").json() == {"modelos": ["deepseek-flash", "deepseek-v4-pro"], "chave_servidor": True}
 
 
 def test_chat_transmite_consulta_e_resposta(agente_roteirizado, servico_falso):
@@ -57,14 +57,15 @@ def test_chat_exige_que_a_ultima_mensagem_seja_do_usuario(agente_roteirizado):
     assert r.status_code == 422
 
 
-def test_chat_sem_chave_do_llm(monkeypatch):
+def test_chat_sem_chave_no_servidor_pede_a_do_visitante(monkeypatch):
     monkeypatch.setattr(main, "_agentes", {})
     monkeypatch.delenv("LLM_API_KEY", raising=False)
     monkeypatch.delenv("LLM_MODELOS", raising=False)
     monkeypatch.delenv("LLM_MODEL", raising=False)
+    assert client.get("/api/config").json()["chave_servidor"] is False
     r = client.post("/api/chat", json={"mensagens": [{"papel": "user", "texto": "oi"}]})
-    assert r.status_code == 503
-    assert "LLM_API_KEY" in r.json()["detail"]
+    assert r.status_code == 401
+    assert "sua própria chave" in r.json()["detail"]
 
 
 def test_falha_do_llm_vira_evento_de_erro(monkeypatch):

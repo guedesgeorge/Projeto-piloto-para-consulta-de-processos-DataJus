@@ -59,11 +59,19 @@ def modelos_disponiveis() -> list[str]:
     return modelos
 
 
-def criar_modelo(nome: str | None = None):
-    """Cria o LLM a partir do .env. Funciona com qualquer API compatível com a da OpenAI."""
+def chave_do_servidor() -> bool:
+    """O servidor tem uma chave própria do LLM? Sem ela, cada visitante precisa trazer a sua."""
+    return bool((os.getenv("LLM_API_KEY") or "").strip())
+
+
+def criar_modelo(nome: str | None = None, chave: str | None = None):
+    """Cria o LLM. Funciona com qualquer API compatível com a da OpenAI.
+
+    `chave` é a chave trazida pelo visitante; sem ela, usa a LLM_API_KEY do .env.
+    """
     from langchain_openai import ChatOpenAI
 
-    chave = os.getenv("LLM_API_KEY")
+    chave = chave or os.getenv("LLM_API_KEY")
     if not chave:
         raise RuntimeError("Defina LLM_API_KEY no arquivo .env (chave da API do DeepSeek ou de outro provedor).")
 
@@ -83,9 +91,9 @@ def criar_modelo(nome: str | None = None):
     )
 
 
-def criar_agente(modelo=None, nome_modelo: str | None = None):
+def criar_agente(modelo=None, nome_modelo: str | None = None, chave: str | None = None):
     """Cria o agente. `modelo` permite injetar outro chat model (usado nos testes)."""
-    return create_agent(modelo or criar_modelo(nome_modelo), tools=[consultar_processo], system_prompt=SYSTEM_PROMPT)
+    return create_agent(modelo or criar_modelo(nome_modelo, chave), tools=[consultar_processo], system_prompt=SYSTEM_PROMPT)
 
 
 # ---------------------------------------------------------------- conversa

@@ -85,8 +85,8 @@ def health():
 
 @app.get("/api/config", tags=["infra"])
 def config():
-    """Modelos disponíveis para o seletor da interface."""
-    return {"modelos": ag.modelos_disponiveis()}
+    """Modelos disponíveis e se o servidor tem chave própria do LLM (senão, o visitante traz a sua)."""
+    return {"modelos": ag.modelos_disponiveis(), "chave_servidor": ag.chave_do_servidor()}
 
 
 # Rotas síncronas de propósito: o FastAPI as executa numa thread separada,
@@ -124,10 +124,38 @@ def ler_anexo(arquivo: UploadFile):
 _agentes: dict[str, object] = {}
 
 
-def obter_agente(nome_modelo: str):
+def obter_agente(nome_modelo: str, chave_visitante: str | None = None):
+    """Agente com a chave do servidor (reaproveitado) ou com a do visitante.
+
+    O agente do visitante é criado a cada pedido e descartado no fim: a chave dele
+    não fica guardada no servidor.
+    """
+    if chave_visitante:
+        return ag.criar_agente(nome_modelo=nome_modelo, chave=chave_visitante)
     if nome_modelo not in _agentes:
         _agentes[nome_modelo] = ag.criar_agente(nome_modelo=nome_modelo)
     return _agentes[nome_modelo]
+
+
+def ler_chave_visitante(valor: str | None) -> str | None:
+    """Valida o cabeçalho X-LLM-Key. Vazio significa usar a chave do servidor."""
+    chave = (valor or "").strip()
+    if not chave:
+        return None
+    if len(chave) < 10 or len(chave) > 300 or any(c.isspace() for c in chave):
+        raise HTTPException(status_code=422, detail="A chave de API informada não parece válida. Confira se copiou a chave inteira.")
+    return chave
+
+
+def _mensagem_de_falha(e: Exception, chave_visitante: str | None) -> str:
+    nome = type(e).__name__
+    if "Authentication" in nome or "PermissionDenied" in nome:
+        if chave_visitante:
+            return "O DeepSeek recusou a sua chave de API. Confira se ela está certa e ativa."
+        return "O provedor do modelo recusou a chave de API do servidor."
+    if "RateLimit" in nome and chave_visitante:
+        return "O DeepSeek recusou o pedido por limite de uso ou falta de saldo na sua conta."
+    return f"Falha ao falar com o modelo de linguagem: {e}"
 
 
 def _sse(evento: dict) -> str:
@@ -147,14 +175,19 @@ def chat(req: ChatRequest, request: Request):
     if req.mensagens[-1].papel != "user":
         raise HTTPException(status_code=422, detail="A última mensagem deve ser do usuário.")
 
-    ip = ip_do_visitante(request.headers.get("x-forwarded-for"), request.client.host if request.client else None)
-    bloqueio = limitador.registrar(ip)
-    if bloqueio:
-        raise HTTPException(status_code=429, detail=bloqueio.mensagem,
-                            headers={"Retry-After": str(bloqueio.tentar_em)})
+    chave_visitante = ler_chave_visitante(request.headers.get("x-llm-key"))
+    if not chave_visitante:
+        if not ag.chave_do_servidor():
+            raise HTTPException(status_code=401, detail="Esta demonstração usa a sua própria chave do DeepSeek. Informe-a em \"Sua chave\", no topo da página.")
+        # Só a chave do servidor tem limite: quem traz a própria chave paga o próprio uso.
+        ip = ip_do_visitante(request.headers.get("x-forwarded-for"), request.client.host if request.client else None)
+        bloqueio = limitador.registrar(ip)
+        if bloqueio:
+            raise HTTPException(status_code=429, detail=bloqueio.mensagem,
+                                headers={"Retry-After": str(bloqueio.tentar_em)})
 
     try:
-        agente = obter_agente(nome_modelo)
+        agente = obter_agente(nome_modelo, chave_visitante)
     except RuntimeError as e:  # chave do LLM ausente
         raise HTTPException(status_code=503, detail=str(e))
 
@@ -166,7 +199,7 @@ def chat(req: ChatRequest, request: Request):
             for evento in ag.transmitir(agente, mensagens):
                 yield _sse(evento)
         except Exception as e:  # falha do provedor do LLM (chave, crédito, rede)
-            yield _sse({"tipo": "erro", "mensagem": f"Falha ao falar com o modelo de linguagem: {e}"})
+            yield _sse({"tipo": "erro", "mensagem": _mensagem_de_falha(e, chave_visitante)})
         yield _sse({"tipo": "fim"})
 
     return StreamingResponse(eventos(), media_type="text/event-stream",
